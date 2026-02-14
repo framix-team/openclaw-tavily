@@ -1,5 +1,8 @@
 # openclaw-tavily
 
+[![npm version](https://img.shields.io/npm/v/openclaw-tavily.svg)](https://www.npmjs.com/package/openclaw-tavily)
+[![license](https://img.shields.io/npm/l/openclaw-tavily.svg)](https://github.com/framix-team/openclaw-tavily/blob/main/LICENSE)
+
 A [Tavily](https://tavily.com) web search plugin for [OpenClaw](https://github.com/openclaw/openclaw).
 
 Exposes a `tavily_search` agent tool that returns structured search results with titles, URLs, content snippets, relevance scores, and an optional AI-generated answer.
@@ -111,6 +114,13 @@ The agent can call this tool with the following parameters:
 
 - OpenClaw **2025+**
 - A [Tavily API key](https://app.tavily.com) (free tier available)
+
+## Links
+
+- **npm**: [openclaw-tavily](https://www.npmjs.com/package/openclaw-tavily)
+- **GitHub**: [framix-team/openclaw-tavily](https://github.com/framix-team/openclaw-tavily)
+- **Tavily API docs**: [docs.tavily.com](https://docs.tavily.com)
+- **OpenClaw plugin docs**: [docs.openclaw.ai/tools/plugin](https://docs.openclaw.ai/tools/plugin)
 
 ## Made by
 
