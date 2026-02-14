@@ -1,0 +1,42 @@
+{
+  "id": "openclaw-tavily",
+  "kind": "tools",
+  "name": "Tavily Search",
+  "description": "Web search via Tavily API. Provides a tavily_search tool that returns structured search results with titles, URLs, snippets, and optional raw content.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "Tavily API key (defaults to TAVILY_API_KEY env var)"
+      },
+      "searchDepth": {
+        "type": "string",
+        "enum": ["basic", "advanced"],
+        "description": "Search depth: basic (fast) or advanced (thorough). Default: advanced"
+      },
+      "maxResults": {
+        "type": "number",
+        "description": "Default number of results (1-20). Default: 5"
+      },
+      "includeAnswer": {
+        "type": "boolean",
+        "description": "Include an AI-generated short answer. Default: true"
+      },
+      "includeRawContent": {
+        "type": "boolean",
+        "description": "Include raw page content in results. Default: false"
+      },
+      "timeoutSeconds": {
+        "type": "number",
+        "description": "Timeout in seconds for search requests. Default: 30"
+      },
+      "cacheTtlMinutes": {
+        "type": "number",
+        "description": "Cache TTL in minutes. Default: 15"
+      }
+    }
+  }
+}

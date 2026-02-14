@@ -1,0 +1,14 @@
+{
+  "name": "openclaw-tavily",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Tavily web search plugin for OpenClaw — exposes tavily_search as an agent tool",
+  "license": "MIT",
+  "keywords": ["openclaw", "plugin", "tavily", "search", "web"],
+  "dependencies": {
+    "@sinclair/typebox": "0.34.47"
+  },
+  "openclaw": {
+    "extensions": ["./index.ts"]
+  }
+}
