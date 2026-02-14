@@ -1,6 +1,6 @@
 ---
 name: tavily-search
-description: Web search via Tavily API. Returns structured results with AI-generated answers. Use for current events, research, fact-checking, and finding URLs.
+description: Web search, extraction, crawling, mapping, and deep research via Tavily API. Five tools for finding information, extracting content, exploring websites, and generating research reports.
 metadata:
   {
     "openclaw":
@@ -14,19 +14,27 @@ metadata:
 
 # Tavily Search
 
-AI-optimized web search using the [Tavily API](https://tavily.com). Returns clean, relevant results designed for AI agents.
+AI-optimized web tools using the [Tavily API](https://tavily.com). Five tools for search, extraction, crawling, mapping, and research.
 
 ## When to use
 
-- Current events, news, recent information
-- Fact-checking or verifying claims
-- Research on topics, companies, people
-- Finding URLs, documentation, or references
-- Anything the agent's training data might not cover
+- **Search** — Current events, news, fact-checking, finding references
+- **Extract** — Get full clean content from specific URLs
+- **Crawl** — Traverse a website and extract content from multiple pages
+- **Map** — Discover all URLs on a site to understand its structure
+- **Research** — Complex multi-step research questions needing comprehensive reports
 
-## Native tool (preferred)
+## Native tools (preferred)
 
-If the `openclaw-tavily` plugin is installed, use the `tavily_search` tool directly — it has caching, typed schemas, and domain filtering built in.
+If the `openclaw-tavily` plugin is installed, use these tools directly:
+
+| Tool | Description |
+|------|-------------|
+| `tavily_search` | Web search with AI answers, domain filtering, news support |
+| `tavily_extract` | Extract clean markdown/text content from URLs |
+| `tavily_crawl` | Crawl a website from a root URL, extract page content |
+| `tavily_map` | Discover and list all URLs from a website |
+| `tavily_research` | Deep agentic research with comprehensive reports |
 
 ## Script fallback
 
@@ -36,23 +44,65 @@ If the `openclaw-tavily` plugin is installed, use the `tavily_search` tool direc
 node {baseDir}/scripts/search.mjs "query"
 node {baseDir}/scripts/search.mjs "query" -n 10
 node {baseDir}/scripts/search.mjs "query" --deep
-node {baseDir}/scripts/search.mjs "query" --topic news --days 7
+node {baseDir}/scripts/search.mjs "query" --topic news --time-range week
 ```
 
 Options:
 - `-n <count>`: Number of results (default: 5, max: 20)
 - `--deep`: Advanced search for deeper research (slower, more thorough)
-- `--topic <topic>`: `general` (default) or `news`
-- `--days <n>`: For news, limit to last n days
+- `--topic <topic>`: `general` (default), `news`, or `finance`
+- `--time-range <range>`: `day`, `week`, `month`, or `year`
 
 ### Extract content from URLs
 
 ```bash
 node {baseDir}/scripts/extract.mjs "https://example.com/article"
 node {baseDir}/scripts/extract.mjs "url1" "url2" "url3"
+node {baseDir}/scripts/extract.mjs "url" --format text --query "relevant topic"
 ```
 
 Extracts clean text content from one or more URLs.
+
+### Crawl a website
+
+```bash
+node {baseDir}/scripts/crawl.mjs "https://example.com"
+node {baseDir}/scripts/crawl.mjs "https://example.com" --depth 3 --breadth 20 --limit 50
+node {baseDir}/scripts/crawl.mjs "https://example.com" --instructions "Find pricing pages" --format text
+```
+
+Options:
+- `--depth <N>`: Crawl depth 1-5
+- `--breadth <N>`: Max links per level (1-500)
+- `--limit <N>`: Total URL cap
+- `--instructions "..."`: Natural language crawl guidance
+- `--format <markdown|text>`: Output format
+
+### Map a website
+
+```bash
+node {baseDir}/scripts/map.mjs "https://example.com"
+node {baseDir}/scripts/map.mjs "https://example.com" --depth 2 --limit 100
+node {baseDir}/scripts/map.mjs "https://example.com" --instructions "Find documentation pages"
+```
+
+Options:
+- `--depth <N>`: Crawl depth 1-5
+- `--breadth <N>`: Max links per level
+- `--limit <N>`: Total URL cap
+- `--instructions "..."`: Natural language guidance
+
+### Research a topic
+
+```bash
+node {baseDir}/scripts/research.mjs "What are the latest advances in quantum computing?"
+node {baseDir}/scripts/research.mjs "Compare React vs Vue in 2025" --model pro
+node {baseDir}/scripts/research.mjs "AI regulation in the EU" --citation-format apa
+```
+
+Options:
+- `--model <mini|pro|auto>`: Research model (default: auto)
+- `--citation-format <numbered|mla|apa|chicago>`: Citation style
 
 ## Setup
 

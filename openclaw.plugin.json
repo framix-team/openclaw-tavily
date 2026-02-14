@@ -3,8 +3,8 @@
   "kind": "tools",
   "skills": ["./skills"],
   "name": "Tavily Search",
-  "description": "Web search via Tavily API. Provides a tavily_search tool that returns structured search results with titles, URLs, snippets, and optional raw content.",
-  "version": "0.1.0",
+  "description": "Web tools via Tavily API. Provides tavily_search, tavily_extract, tavily_crawl, tavily_map, and tavily_research tools for search, content extraction, website crawling, site mapping, and deep research.",
+  "version": "0.2.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
