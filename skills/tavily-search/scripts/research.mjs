@@ -81,7 +81,7 @@ if (data.status === "pending" && data.request_id) {
 
     data = await pollResp.json();
 
-    if (data.status === "completed" || data.output) {
+    if (data.status === "completed" || data.content || data.output) {
       process.stderr.write(` done (${Math.round((Date.now() - start) / 1000)}s)\n`);
       break;
     }
@@ -100,8 +100,9 @@ if (data.status === "pending" && data.request_id) {
 
 console.log("## Research Report\n");
 
-if (data.output) {
-  console.log(data.output);
+const reportContent = data.content || data.output || "";
+if (reportContent) {
+  console.log(reportContent);
   console.log();
 }
 

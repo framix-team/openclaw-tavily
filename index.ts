@@ -1154,7 +1154,7 @@ const tavilyPlugin = {
             const createData = await createRes.json() as Record<string, unknown>;
             const requestId = createData.request_id as string | undefined;
 
-            // If the response already has output (not pending), return it
+            // If the response already has content/output (not pending), return it
             if (createData.status !== "pending" || !requestId) {
               const tookMs = Date.now() - start;
               const payload = { ...createData, provider: "tavily", tookMs };
@@ -1192,7 +1192,7 @@ const tavilyPlugin = {
 
               const pollData = await pollRes.json() as Record<string, unknown>;
 
-              if (pollData.status === "completed" || pollData.output) {
+              if (pollData.status === "completed" || pollData.content || pollData.output) {
                 const tookMs = Date.now() - start;
                 const payload = { ...pollData, provider: "tavily", tookMs };
                 api.logger.info(`tavily research: "${input.slice(0, 60)}" completed in ${tookMs}ms`);
