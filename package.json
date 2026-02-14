@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Tavily web search plugin for OpenClaw — exposes tavily_search as an agent tool",
   "license": "MIT",
-  "author": "Framix <framix@exe.dev>",
+  "author": "Framix (https://framix.net)",
   "repository": {
     "type": "git",
     "url": "https://github.com/framix/openclaw-tavily.git"

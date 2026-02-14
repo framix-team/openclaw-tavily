@@ -112,6 +112,10 @@ The agent can call this tool with the following parameters:
 - OpenClaw **2025+**
 - A [Tavily API key](https://app.tavily.com) (free tier available)
 
+## Made by
+
+[Framix](https://framix.net/) — Growth Web Presence for Scaling Companies
+
 ## License
 
 MIT
