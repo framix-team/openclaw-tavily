@@ -24,6 +24,7 @@
   "files": [
     "index.ts",
     "openclaw.plugin.json",
+    "skills",
     "README.md",
     "LICENSE"
   ],
