@@ -4,9 +4,39 @@
   "type": "module",
   "description": "Tavily web search plugin for OpenClaw — exposes tavily_search as an agent tool",
   "license": "MIT",
-  "keywords": ["openclaw", "plugin", "tavily", "search", "web"],
+  "author": "Framix <framix@exe.dev>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/framix/openclaw-tavily.git"
+  },
+  "homepage": "https://github.com/framix/openclaw-tavily#readme",
+  "bugs": {
+    "url": "https://github.com/framix/openclaw-tavily/issues"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "tavily",
+    "search",
+    "web-search",
+    "ai-search"
+  ],
+  "files": [
+    "index.ts",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@sinclair/typebox": "0.34.47"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2025.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
   },
   "openclaw": {
     "extensions": ["./index.ts"]

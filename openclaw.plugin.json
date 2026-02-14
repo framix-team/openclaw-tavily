@@ -38,5 +38,38 @@
         "description": "Cache TTL in minutes. Default: 15"
       }
     }
+  },
+  "uiHints": {
+    "apiKey": {
+      "label": "Tavily API Key",
+      "sensitive": true,
+      "placeholder": "tvly-..."
+    },
+    "searchDepth": {
+      "label": "Search Depth",
+      "help": "\"advanced\" is slower but more thorough."
+    },
+    "maxResults": {
+      "label": "Max Results",
+      "help": "Number of results per search (1-20)."
+    },
+    "includeAnswer": {
+      "label": "Include AI Answer",
+      "help": "Tavily generates a short AI summary of the results."
+    },
+    "includeRawContent": {
+      "label": "Include Raw Content",
+      "help": "Return full page content (increases token usage).",
+      "advanced": true
+    },
+    "timeoutSeconds": {
+      "label": "Timeout (seconds)",
+      "advanced": true
+    },
+    "cacheTtlMinutes": {
+      "label": "Cache TTL (minutes)",
+      "help": "How long to cache results. Set 0 to disable.",
+      "advanced": true
+    }
   }
 }

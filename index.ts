@@ -23,6 +23,8 @@ import { Type } from "@sinclair/typebox";
 // Types
 // ---------------------------------------------------------------------------
 
+// Use OpenClawPluginApi from the SDK when available; fall back to a minimal
+// interface so the plugin works even without openclaw in node_modules.
 type PluginApi = {
   pluginConfig?: Record<string, unknown>;
   logger: {
@@ -30,8 +32,8 @@ type PluginApi = {
     warn: (msg: string) => void;
     error: (msg: string) => void;
   };
-  registerTool: (tool: any, opts?: any) => void;
-  registerService: (svc: any) => void;
+  registerTool: (tool: unknown, opts?: unknown) => void;
+  registerService: (svc: unknown) => void;
 };
 
 type TavilySearchResult = {
