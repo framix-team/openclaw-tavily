@@ -1122,43 +1122,111 @@ const tavilyPlugin = {
           if (typeof params.citation_format === "string" && ["numbered", "mla", "apa", "chicago"].includes(params.citation_format))
             body.citation_format = params.citation_format;
 
+          // Research is async — POST to create, then poll GET until complete
+          const RESEARCH_POLL_INTERVAL = 2000; // 2s between polls
+          const RESEARCH_MAX_WAIT = defaultTimeout * 5 * 1000; // 5x default timeout
+
           const start = Date.now();
           try {
-            const controller = new AbortController();
-            // Research can take longer — use 3x the default timeout
-            const timer = setTimeout(() => controller.abort(), defaultTimeout * 3 * 1000);
-
-            const res = await fetch(TAVILY_RESEARCH_ENDPOINT, {
+            // Step 1: Create the research task
+            const createRes = await fetch(TAVILY_RESEARCH_ENDPOINT, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${apiKey}`,
               },
               body: JSON.stringify(body),
-              signal: controller.signal,
             });
-            clearTimeout(timer);
 
-            if (!res.ok) {
+            if (!createRes.ok) {
               let detail = "";
-              try { detail = await res.text(); } catch {}
-              api.logger.warn(`tavily research: API error ${res.status}: ${detail || res.statusText}`);
+              try { detail = await createRes.text(); } catch {}
+              api.logger.warn(`tavily research: API error ${createRes.status}: ${detail || createRes.statusText}`);
               return {
                 content: [{
                   type: "text" as const,
-                  text: JSON.stringify({ error: "tavily_api_error", status: res.status, message: detail || res.statusText }, null, 2),
+                  text: JSON.stringify({ error: "tavily_api_error", status: createRes.status, message: detail || createRes.statusText }, null, 2),
                 }],
                 details: {},
               };
             }
 
-            const data = await res.json() as Record<string, unknown>;
-            const tookMs = Date.now() - start;
-            const payload = { ...data, provider: "tavily", tookMs };
+            const createData = await createRes.json() as Record<string, unknown>;
+            const requestId = createData.request_id as string | undefined;
 
-            api.logger.info(`tavily research: "${input.slice(0, 60)}" in ${tookMs}ms`);
+            // If the response already has output (not pending), return it
+            if (createData.status !== "pending" || !requestId) {
+              const tookMs = Date.now() - start;
+              const payload = { ...createData, provider: "tavily", tookMs };
+              api.logger.info(`tavily research: "${input.slice(0, 60)}" immediate in ${tookMs}ms`);
+              return {
+                content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+                details: {},
+              };
+            }
+
+            // Step 2: Poll until complete or timeout
+            api.logger.info(`tavily research: polling ${requestId} for "${input.slice(0, 60)}"...`);
+            const pollUrl = `${TAVILY_RESEARCH_ENDPOINT}/${requestId}`;
+
+            while (Date.now() - start < RESEARCH_MAX_WAIT) {
+              await new Promise((r) => setTimeout(r, RESEARCH_POLL_INTERVAL));
+
+              const pollRes = await fetch(pollUrl, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${apiKey}` },
+              });
+
+              if (!pollRes.ok) {
+                let detail = "";
+                try { detail = await pollRes.text(); } catch {}
+                api.logger.warn(`tavily research: poll error ${pollRes.status}: ${detail || pollRes.statusText}`);
+                return {
+                  content: [{
+                    type: "text" as const,
+                    text: JSON.stringify({ error: "tavily_api_error", status: pollRes.status, message: detail || pollRes.statusText }, null, 2),
+                  }],
+                  details: {},
+                };
+              }
+
+              const pollData = await pollRes.json() as Record<string, unknown>;
+
+              if (pollData.status === "completed" || pollData.output) {
+                const tookMs = Date.now() - start;
+                const payload = { ...pollData, provider: "tavily", tookMs };
+                api.logger.info(`tavily research: "${input.slice(0, 60)}" completed in ${tookMs}ms`);
+                return {
+                  content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+                  details: {},
+                };
+              }
+
+              if (pollData.status === "failed" || pollData.status === "error") {
+                api.logger.warn(`tavily research: task failed: ${JSON.stringify(pollData)}`);
+                return {
+                  content: [{
+                    type: "text" as const,
+                    text: JSON.stringify({ error: "tavily_research_failed", ...pollData }, null, 2),
+                  }],
+                  details: {},
+                };
+              }
+              // still pending — continue polling
+            }
+
+            // Timeout
+            const tookMs = Date.now() - start;
+            api.logger.warn(`tavily research: timed out after ${tookMs}ms for "${input.slice(0, 60)}"`);
             return {
-              content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+              content: [{
+                type: "text" as const,
+                text: JSON.stringify({
+                  error: "tavily_research_timeout",
+                  message: `Research task ${requestId} still pending after ${Math.round(tookMs / 1000)}s. Try again later.`,
+                  requestId,
+                }, null, 2),
+              }],
               details: {},
             };
           } catch (err) {
