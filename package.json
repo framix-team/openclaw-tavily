@@ -1,6 +1,6 @@
 {
   "name": "openclaw-tavily",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Tavily web tools plugin for OpenClaw — exposes tavily_search, tavily_extract, tavily_crawl, tavily_map, and tavily_research as agent tools",
   "license": "MIT",
