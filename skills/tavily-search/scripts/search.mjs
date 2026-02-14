@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 function usage() {
-  console.error('Usage: search.mjs "query" [-n 5] [--deep] [--topic general|news] [--days 7]');
+  console.error('Usage: search.mjs "query" [-n 5] [--deep] [--topic general|news|finance] [--time-range day|week|month|year]');
   process.exit(2);
 }
 
@@ -12,7 +12,7 @@ const query = args[0];
 let n = 5;
 let searchDepth = "basic";
 let topic = "general";
-let days = null;
+let timeRange = null;
 
 for (let i = 1; i < args.length; i++) {
   const a = args[i];
@@ -24,8 +24,8 @@ for (let i = 1; i < args.length; i++) {
   } else if (a === "--topic") {
     topic = args[i + 1] ?? "general";
     i++;
-  } else if (a === "--days") {
-    days = Number.parseInt(args[i + 1] ?? "7", 10);
+  } else if (a === "--time-range") {
+    timeRange = args[i + 1] ?? null;
     i++;
   } else {
     console.error(`Unknown arg: ${a}`);
@@ -40,7 +40,6 @@ if (!apiKey) {
 }
 
 const body = {
-  api_key: apiKey,
   query,
   search_depth: searchDepth,
   topic,
@@ -49,13 +48,16 @@ const body = {
   include_raw_content: false,
 };
 
-if (topic === "news" && days) {
-  body.days = days;
+if (timeRange) {
+  body.time_range = timeRange;
 }
 
 const resp = await fetch("https://api.tavily.com/search", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  },
   body: JSON.stringify(body),
 });
 

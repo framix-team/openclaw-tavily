@@ -15,20 +15,26 @@
       },
       "searchDepth": {
         "type": "string",
-        "enum": ["basic", "advanced"],
-        "description": "Search depth: basic (fast) or advanced (thorough). Default: advanced"
+        "enum": ["ultra-fast", "fast", "basic", "advanced"],
+        "description": "Search depth: ultra-fast, fast, basic, or advanced (thorough). Default: advanced"
       },
       "maxResults": {
         "type": "number",
         "description": "Default number of results (1-20). Default: 5"
       },
       "includeAnswer": {
-        "type": "boolean",
-        "description": "Include an AI-generated short answer. Default: true"
+        "oneOf": [
+          { "type": "boolean" },
+          { "type": "string", "enum": ["basic", "advanced"] }
+        ],
+        "description": "Include an AI-generated short answer. Boolean or 'basic'/'advanced'. Default: true"
       },
       "includeRawContent": {
-        "type": "boolean",
-        "description": "Include raw page content in results. Default: false"
+        "oneOf": [
+          { "type": "boolean" },
+          { "type": "string", "enum": ["markdown", "text"] }
+        ],
+        "description": "Include raw page content. Boolean or 'markdown'/'text'. Default: false"
       },
       "timeoutSeconds": {
         "type": "number",
@@ -48,7 +54,7 @@
     },
     "searchDepth": {
       "label": "Search Depth",
-      "help": "\"advanced\" is slower but more thorough."
+      "help": "ultra-fast and fast are cheapest; advanced is slowest but most thorough."
     },
     "maxResults": {
       "label": "Max Results",
@@ -56,11 +62,11 @@
     },
     "includeAnswer": {
       "label": "Include AI Answer",
-      "help": "Tavily generates a short AI summary of the results."
+      "help": "true/false, or 'basic'/'advanced' for answer quality tier."
     },
     "includeRawContent": {
       "label": "Include Raw Content",
-      "help": "Return full page content (increases token usage).",
+      "help": "true/false, or 'markdown'/'text' for format. Increases token usage.",
       "advanced": true
     },
     "timeoutSeconds": {

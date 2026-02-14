@@ -9,10 +9,10 @@
  *
  * Config (openclaw.json → plugins.entries.openclaw-tavily.config):
  *   apiKey            - Tavily API key (or set TAVILY_API_KEY env var)
- *   searchDepth       - "basic" | "advanced" (default: "advanced")
+ *   searchDepth       - "basic" | "advanced" | "fast" | "ultra-fast" (default: "advanced")
  *   maxResults        - 1-20 (default: 5)
- *   includeAnswer     - boolean (default: true)
- *   includeRawContent - boolean (default: false)
+ *   includeAnswer     - boolean | "basic" | "advanced" (default: true)
+ *   includeRawContent - boolean | "markdown" | "text" (default: false)
  *   timeoutSeconds    - number (default: 30)
  *   cacheTtlMinutes   - number (default: 15)
  */
@@ -42,6 +42,7 @@ type TavilySearchResult = {
   content: string; // snippet
   raw_content?: string;
   score: number;
+  favicon?: string;
 };
 
 type TavilySearchResponse = {
@@ -105,9 +106,12 @@ function resolveApiKey(cfg: Record<string, unknown>): string | undefined {
   return fromConfig || fromEnv || undefined;
 }
 
-function resolveSearchDepth(cfg: Record<string, unknown>): "basic" | "advanced" {
+type SearchDepth = "basic" | "advanced" | "fast" | "ultra-fast";
+
+function resolveSearchDepth(cfg: Record<string, unknown>): SearchDepth {
   const v = typeof cfg.searchDepth === "string" ? cfg.searchDepth.trim().toLowerCase() : "";
-  return v === "basic" ? "basic" : DEFAULT_SEARCH_DEPTH;
+  if (v === "basic" || v === "fast" || v === "ultra-fast") return v as SearchDepth;
+  return DEFAULT_SEARCH_DEPTH;
 }
 
 function resolveMaxResults(cfg: Record<string, unknown>): number {
@@ -115,12 +119,18 @@ function resolveMaxResults(cfg: Record<string, unknown>): number {
   return Math.max(1, Math.min(MAX_RESULTS_CAP, Math.floor(v)));
 }
 
-function resolveIncludeAnswer(cfg: Record<string, unknown>): boolean {
-  return cfg.includeAnswer !== false; // default true
+function resolveIncludeAnswer(cfg: Record<string, unknown>): boolean | string {
+  const v = cfg.includeAnswer;
+  if (typeof v === "string" && ["basic", "advanced"].includes(v)) return v;
+  if (v === false) return false;
+  return true; // default true
 }
 
-function resolveIncludeRawContent(cfg: Record<string, unknown>): boolean {
-  return cfg.includeRawContent === true; // default false
+function resolveIncludeRawContent(cfg: Record<string, unknown>): boolean | string {
+  const v = cfg.includeRawContent;
+  if (typeof v === "string" && ["markdown", "text"].includes(v)) return v;
+  if (v === true) return true;
+  return false; // default false
 }
 
 function resolveTimeout(cfg: Record<string, unknown>): number {
@@ -158,29 +168,41 @@ const TavilySearchSchema = Type.Object({
   search_depth: Type.Optional(
     Type.String({
       description:
-        'Search depth: "basic" (fast, cheaper) or "advanced" (thorough). Default: from config.',
+        'Search depth: "ultra-fast", "fast", "basic", or "advanced" (thorough). Default: from config.',
     }),
   ),
   include_answer: Type.Optional(
-    Type.Boolean({
-      description: "Include an AI-generated short answer. Default: from config.",
+    Type.Union([Type.Boolean(), Type.String()], {
+      description:
+        'Include an AI-generated short answer. Boolean or "basic"/"advanced". Default: from config.',
     }),
   ),
   include_raw_content: Type.Optional(
-    Type.Boolean({
-      description: "Include raw page content in results. Default: from config.",
+    Type.Union([Type.Boolean(), Type.String()], {
+      description:
+        'Include raw page content. Boolean or "markdown"/"text". Default: from config.',
     }),
   ),
   topic: Type.Optional(
     Type.String({
       description:
-        'Category of search: "general" or "news". Default: "general".',
+        'Category of search: "general", "news", or "finance". Default: "general".',
     }),
   ),
-  days: Type.Optional(
-    Type.Number({
+  time_range: Type.Optional(
+    Type.String({
       description:
-        "Number of days back to search (only for topic=news). Default: 3.",
+        'Time range filter: "day", "week", "month", or "year".',
+    }),
+  ),
+  start_date: Type.Optional(
+    Type.String({
+      description: "Start date for results (ISO date string, e.g. \"2024-01-01\").",
+    }),
+  ),
+  end_date: Type.Optional(
+    Type.String({
+      description: "End date for results (ISO date string, e.g. \"2024-12-31\").",
     }),
   ),
   include_domains: Type.Optional(
@@ -191,6 +213,38 @@ const TavilySearchSchema = Type.Object({
   exclude_domains: Type.Optional(
     Type.Array(Type.String(), {
       description: "Exclude results from these domains.",
+    }),
+  ),
+  chunks_per_source: Type.Optional(
+    Type.Number({
+      description: "Number of content chunks per source (1-3, only for advanced depth).",
+      minimum: 1,
+      maximum: 3,
+    }),
+  ),
+  include_images: Type.Optional(
+    Type.Boolean({
+      description: "Include images in results. Default: false.",
+    }),
+  ),
+  include_image_descriptions: Type.Optional(
+    Type.Boolean({
+      description: "Include descriptions for images. Default: false.",
+    }),
+  ),
+  include_favicon: Type.Optional(
+    Type.Boolean({
+      description: "Include favicon URLs for each result. Default: false.",
+    }),
+  ),
+  country: Type.Optional(
+    Type.String({
+      description: "Country code for geo-boosted results (only for general topic), e.g. \"us\", \"gb\".",
+    }),
+  ),
+  auto_parameters: Type.Optional(
+    Type.Boolean({
+      description: "Let Tavily automatically set optimal search parameters. Default: false.",
     }),
   ),
 });
@@ -270,30 +324,43 @@ const tavilyPlugin = {
 
           const searchDepth =
             typeof params.search_depth === "string" &&
-            ["basic", "advanced"].includes(params.search_depth)
-              ? (params.search_depth as "basic" | "advanced")
+            ["basic", "advanced", "fast", "ultra-fast"].includes(params.search_depth)
+              ? (params.search_depth as SearchDepth)
               : defaultSearchDepth;
 
-          const includeAnswer =
-            typeof params.include_answer === "boolean"
+          const includeAnswer: boolean | string =
+            typeof params.include_answer === "string" &&
+            ["basic", "advanced"].includes(params.include_answer)
               ? params.include_answer
-              : defaultIncludeAnswer;
+              : typeof params.include_answer === "boolean"
+                ? params.include_answer
+                : defaultIncludeAnswer;
 
-          const includeRawContent =
-            typeof params.include_raw_content === "boolean"
+          const includeRawContent: boolean | string =
+            typeof params.include_raw_content === "string" &&
+            ["markdown", "text"].includes(params.include_raw_content)
               ? params.include_raw_content
-              : defaultIncludeRawContent;
+              : typeof params.include_raw_content === "boolean"
+                ? params.include_raw_content
+                : defaultIncludeRawContent;
 
           const topic =
             typeof params.topic === "string" &&
-            ["general", "news"].includes(params.topic)
+            ["general", "news", "finance"].includes(params.topic)
               ? params.topic
               : "general";
 
-          const days =
-            topic === "news" && typeof params.days === "number" && params.days > 0
-              ? Math.floor(params.days)
+          const timeRange =
+            typeof params.time_range === "string" &&
+            ["day", "week", "month", "year"].includes(params.time_range)
+              ? params.time_range
               : undefined;
+
+          const startDate =
+            typeof params.start_date === "string" ? params.start_date.trim() : undefined;
+
+          const endDate =
+            typeof params.end_date === "string" ? params.end_date.trim() : undefined;
 
           const includeDomains = Array.isArray(params.include_domains)
             ? (params.include_domains as string[]).filter(
@@ -307,6 +374,31 @@ const tavilyPlugin = {
               )
             : undefined;
 
+          const chunksPerSource =
+            typeof params.chunks_per_source === "number" &&
+            searchDepth === "advanced"
+              ? Math.max(1, Math.min(3, Math.floor(params.chunks_per_source)))
+              : undefined;
+
+          const includeImages =
+            typeof params.include_images === "boolean" ? params.include_images : undefined;
+
+          const includeImageDescriptions =
+            typeof params.include_image_descriptions === "boolean"
+              ? params.include_image_descriptions
+              : undefined;
+
+          const includeFavicon =
+            typeof params.include_favicon === "boolean" ? params.include_favicon : undefined;
+
+          const country =
+            typeof params.country === "string" && topic === "general"
+              ? params.country.trim()
+              : undefined;
+
+          const autoParameters =
+            typeof params.auto_parameters === "boolean" ? params.auto_parameters : undefined;
+
           // --- cache ---
           const cacheKey = [
             "tavily",
@@ -316,9 +408,17 @@ const tavilyPlugin = {
             includeAnswer,
             includeRawContent,
             topic,
-            days ?? "default",
+            timeRange ?? "",
+            startDate ?? "",
+            endDate ?? "",
             (includeDomains ?? []).join(","),
             (excludeDomains ?? []).join(","),
+            chunksPerSource ?? "",
+            includeImages ?? "",
+            includeImageDescriptions ?? "",
+            includeFavicon ?? "",
+            country ?? "",
+            autoParameters ?? "",
           ]
             .join(":")
             .toLowerCase();
@@ -339,18 +439,26 @@ const tavilyPlugin = {
           // --- build Tavily API request body ---
           const body: Record<string, unknown> = {
             query,
-            api_key: apiKey,
             search_depth: searchDepth,
             max_results: count,
             include_answer: includeAnswer,
             include_raw_content: includeRawContent,
             topic,
           };
-          if (days !== undefined) body.days = days;
+          if (timeRange !== undefined) body.time_range = timeRange;
+          if (startDate) body.start_date = startDate;
+          if (endDate) body.end_date = endDate;
           if (includeDomains && includeDomains.length > 0)
             body.include_domains = includeDomains;
           if (excludeDomains && excludeDomains.length > 0)
             body.exclude_domains = excludeDomains;
+          if (chunksPerSource !== undefined) body.chunks_per_source = chunksPerSource;
+          if (includeImages !== undefined) body.include_images = includeImages;
+          if (includeImageDescriptions !== undefined)
+            body.include_image_descriptions = includeImageDescriptions;
+          if (includeFavicon !== undefined) body.include_favicon = includeFavicon;
+          if (country) body.country = country;
+          if (autoParameters !== undefined) body.auto_parameters = autoParameters;
 
           // --- call Tavily ---
           const start = Date.now();
@@ -364,7 +472,10 @@ const tavilyPlugin = {
 
             const res = await fetch(TAVILY_SEARCH_ENDPOINT, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
               body: JSON.stringify(body),
               signal: controller.signal,
             });
@@ -426,6 +537,7 @@ const tavilyPlugin = {
               : {}),
             score: r.score,
             siteName: siteName(r.url) || undefined,
+            ...(includeFavicon && r.favicon ? { favicon: r.favicon } : {}),
           }));
 
           const payload: Record<string, unknown> = {
