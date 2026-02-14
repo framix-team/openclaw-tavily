@@ -7,11 +7,11 @@
   "author": "Framix (https://framix.net)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/framix/openclaw-tavily.git"
+    "url": "https://github.com/framix-team/openclaw-tavily.git"
   },
-  "homepage": "https://github.com/framix/openclaw-tavily#readme",
+  "homepage": "https://github.com/framix-team/openclaw-tavily#readme",
   "bugs": {
-    "url": "https://github.com/framix/openclaw-tavily/issues"
+    "url": "https://github.com/framix-team/openclaw-tavily/issues"
   },
   "keywords": [
     "openclaw",

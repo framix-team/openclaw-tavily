@@ -13,7 +13,7 @@ openclaw plugins install openclaw-tavily
 Or install from source:
 
 ```bash
-git clone https://github.com/framix/openclaw-tavily.git ~/.openclaw/extensions/openclaw-tavily
+git clone https://github.com/framix-team/openclaw-tavily.git ~/.openclaw/extensions/openclaw-tavily
 cd ~/.openclaw/extensions/openclaw-tavily
 npm install --omit=dev
 ```
